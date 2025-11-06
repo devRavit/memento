@@ -77,7 +77,12 @@ class FileController(
         @PathVariable fileName: String,
     ): ResponseEntity<Resource> {
         return try {
-            val file = fileStorageService.load(fileName)
+            val file =
+                try {
+                    fileStorageService.load(fileName)
+                } catch (e: IllegalArgumentException) {
+                    fileStorageService.loadGeneratedImage(fileName)
+                }
             val resource = FileSystemResource(file)
 
             ResponseEntity.ok()
