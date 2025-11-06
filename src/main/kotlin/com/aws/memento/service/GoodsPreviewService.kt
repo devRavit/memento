@@ -45,11 +45,175 @@ class GoodsPreviewService(
     ): String {
         logger.info("굿즈 미리보기 생성 시작: $goodsType, $imageUrl")
 
-        return if (geminiApiKey.isNotEmpty()) {
+        return if (hasTemplateForGoodsType(goodsType)) {
+            generateTemplateBasedPreview(imageUrl, goodsType)
+        } else if (geminiApiKey.isNotEmpty()) {
             generateAiGoodsPreview(imageUrl, goodsType)
         } else {
             generateBasicGoodsPreview(imageUrl, goodsType)
         }
+    }
+
+    private fun hasTemplateForGoodsType(goodsType: String): Boolean {
+        val templatePath = "src/main/resources/templates/goods/${goodsType}_template.png"
+        return File(templatePath).exists()
+    }
+
+    private fun generateTemplateBasedPreview(
+        imageUrl: String,
+        goodsType: String,
+    ): String {
+        try {
+            val userImage = loadImageFromUrl(imageUrl)
+            val template = loadTemplate(goodsType)
+
+            val compositeImage = overlayImageOnTemplate(userImage, template, goodsType)
+
+            val fileName = "goods_preview_${System.currentTimeMillis()}.png"
+            val outputFile = File(generatedDirectory, fileName)
+            ImageIO.write(compositeImage, "PNG", outputFile)
+
+            val resultUrl = "http://localhost:9998/api/v1/files/download/$fileName"
+            logger.info("템플릿 기반 굿즈 미리보기 생성 완료: $resultUrl")
+
+            return resultUrl
+        } catch (e: Exception) {
+            logger.error("템플릿 기반 미리보기 생성 실패, AI 방식으로 전환", e)
+            return if (geminiApiKey.isNotEmpty()) {
+                generateAiGoodsPreview(imageUrl, goodsType)
+            } else {
+                generateBasicGoodsPreview(imageUrl, goodsType)
+            }
+        }
+    }
+
+    private fun loadTemplate(goodsType: String): BufferedImage {
+        val templatePath = "src/main/resources/templates/goods/${goodsType}_template.png"
+        val templateFile = File(templatePath)
+
+        if (!templateFile.exists()) {
+            throw IllegalArgumentException("템플릿 파일이 없습니다: $templatePath")
+        }
+
+        return ImageIO.read(templateFile)
+    }
+
+    private fun overlayImageOnTemplate(
+        userImage: BufferedImage,
+        template: BufferedImage,
+        goodsType: String,
+    ): BufferedImage {
+        val result = BufferedImage(template.width, template.height, BufferedImage.TYPE_INT_ARGB)
+        val g = result.createGraphics()
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+        g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC)
+        g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY)
+
+        val photoArea = getPhotoAreaForGoodsType(goodsType, template.width, template.height)
+
+        val scaledImage = scaleImageToFit(userImage, photoArea.width, photoArea.height)
+
+        g.drawImage(scaledImage, photoArea.x, photoArea.y, photoArea.width, photoArea.height, null)
+
+        g.drawImage(template, 0, 0, null)
+        g.dispose()
+
+        return result
+    }
+
+    private data class Rectangle(val x: Int, val y: Int, val width: Int, val height: Int)
+
+    private fun getPhotoAreaForGoodsType(
+        goodsType: String,
+        templateWidth: Int,
+        templateHeight: Int,
+    ): Rectangle {
+        return when (goodsType) {
+            "photobook" -> Rectangle(
+                x = (templateWidth * 0.15).toInt(),
+                y = (templateHeight * 0.2).toInt(),
+                width = (templateWidth * 0.4).toInt(),
+                height = (templateHeight * 0.5).toInt(),
+            )
+            "calendar" -> Rectangle(
+                x = (templateWidth * 0.1).toInt(),
+                y = (templateHeight * 0.15).toInt(),
+                width = (templateWidth * 0.8).toInt(),
+                height = (templateHeight * 0.45).toInt(),
+            )
+            "magnet" -> Rectangle(
+                x = (templateWidth * 0.3).toInt(),
+                y = (templateHeight * 0.3).toInt(),
+                width = (templateWidth * 0.4).toInt(),
+                height = (templateHeight * 0.4).toInt(),
+            )
+            "frame" -> Rectangle(
+                x = (templateWidth * 0.2).toInt(),
+                y = (templateHeight * 0.2).toInt(),
+                width = (templateWidth * 0.6).toInt(),
+                height = (templateHeight * 0.6).toInt(),
+            )
+            "sticker" -> Rectangle(
+                x = (templateWidth * 0.25).toInt(),
+                y = (templateHeight * 0.25).toInt(),
+                width = (templateWidth * 0.3).toInt(),
+                height = (templateHeight * 0.3).toInt(),
+            )
+            "poster" -> Rectangle(
+                x = (templateWidth * 0.15).toInt(),
+                y = (templateHeight * 0.15).toInt(),
+                width = (templateWidth * 0.7).toInt(),
+                height = (templateHeight * 0.7).toInt(),
+            )
+            "postcard" -> Rectangle(
+                x = (templateWidth * 0.1).toInt(),
+                y = (templateHeight * 0.1).toInt(),
+                width = (templateWidth * 0.8).toInt(),
+                height = (templateHeight * 0.8).toInt(),
+            )
+            "wall-calendar" -> Rectangle(
+                x = (templateWidth * 0.1).toInt(),
+                y = (templateHeight * 0.1).toInt(),
+                width = (templateWidth * 0.8).toInt(),
+                height = (templateHeight * 0.4).toInt(),
+            )
+            else -> Rectangle(
+                x = (templateWidth * 0.2).toInt(),
+                y = (templateHeight * 0.2).toInt(),
+                width = (templateWidth * 0.6).toInt(),
+                height = (templateHeight * 0.6).toInt(),
+            )
+        }
+    }
+
+    private fun scaleImageToFit(
+        image: BufferedImage,
+        targetWidth: Int,
+        targetHeight: Int,
+    ): BufferedImage {
+        val aspectRatio = image.width.toDouble() / image.height.toDouble()
+        val targetAspectRatio = targetWidth.toDouble() / targetHeight.toDouble()
+
+        val scaledWidth: Int
+        val scaledHeight: Int
+
+        if (aspectRatio > targetAspectRatio) {
+            scaledWidth = targetWidth
+            scaledHeight = (targetWidth / aspectRatio).toInt()
+        } else {
+            scaledHeight = targetHeight
+            scaledWidth = (targetHeight * aspectRatio).toInt()
+        }
+
+        val scaled = BufferedImage(scaledWidth, scaledHeight, BufferedImage.TYPE_INT_ARGB)
+        val g = scaled.createGraphics()
+        g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC)
+        g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY)
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+        g.drawImage(image, 0, 0, scaledWidth, scaledHeight, null)
+        g.dispose()
+
+        return scaled
     }
 
     private fun generateAiGoodsPreview(
