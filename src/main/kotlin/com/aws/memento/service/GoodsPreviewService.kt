@@ -1,6 +1,12 @@
 package com.aws.memento.service
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.awt.Color
 import java.awt.Font
@@ -8,12 +14,23 @@ import java.awt.RenderingHints
 import java.awt.image.BufferedImage
 import java.io.File
 import java.net.URL
+import java.util.Base64
+import java.util.concurrent.TimeUnit
 import javax.imageio.ImageIO
 
 @Service
-class GoodsPreviewService {
+class GoodsPreviewService(
+    @Value("\${gemini.api.key:}")
+    private val geminiApiKey: String,
+    private val objectMapper: ObjectMapper,
+) {
     private val logger = LoggerFactory.getLogger(javaClass)
     private val generatedDirectory = File("upload/generated")
+    private val client =
+        OkHttpClient
+            .Builder()
+            .readTimeout(120, TimeUnit.SECONDS)
+            .build()
 
     init {
         if (!generatedDirectory.exists()) {
@@ -28,6 +45,44 @@ class GoodsPreviewService {
     ): String {
         logger.info("굿즈 미리보기 생성 시작: $goodsType, $imageUrl")
 
+        return if (geminiApiKey.isNotEmpty()) {
+            generateAiGoodsPreview(imageUrl, goodsType)
+        } else {
+            generateBasicGoodsPreview(imageUrl, goodsType)
+        }
+    }
+
+    private fun generateAiGoodsPreview(
+        imageUrl: String,
+        goodsType: String,
+    ): String {
+        try {
+            val userImage = loadImageFromUrl(imageUrl)
+            val base64Image = encodeImageToBase64(userImage)
+
+            val prompt = buildGoodsPreviewPrompt(goodsType)
+
+            val generatedImageData = callGeminiImageGeneration(prompt, base64Image)
+
+            val fileName = "goods_preview_${System.currentTimeMillis()}.png"
+            val outputFile = File(generatedDirectory, fileName)
+            val imageBytes = Base64.getDecoder().decode(generatedImageData)
+            outputFile.writeBytes(imageBytes)
+
+            val resultUrl = "http://localhost:9998/api/v1/files/download/$fileName"
+            logger.info("AI 굿즈 미리보기 생성 완료: $resultUrl")
+
+            return resultUrl
+        } catch (e: Exception) {
+            logger.error("AI 굿즈 미리보기 생성 실패, 기본 방식으로 전환", e)
+            return generateBasicGoodsPreview(imageUrl, goodsType)
+        }
+    }
+
+    private fun generateBasicGoodsPreview(
+        imageUrl: String,
+        goodsType: String,
+    ): String {
         val userImage = loadImageFromUrl(imageUrl)
         val previewImage = createGoodsPreview(userImage, goodsType)
 
@@ -35,10 +90,176 @@ class GoodsPreviewService {
         val outputFile = File(generatedDirectory, fileName)
         ImageIO.write(previewImage, "PNG", outputFile)
 
-        val imageUrl = "http://localhost:9998/api/v1/files/download/$fileName"
-        logger.info("굿즈 미리보기 생성 완료: $imageUrl")
+        val resultUrl = "http://localhost:9998/api/v1/files/download/$fileName"
+        logger.info("기본 굿즈 미리보기 생성 완료: $resultUrl")
 
-        return imageUrl
+        return resultUrl
+    }
+
+    private fun buildGoodsPreviewPrompt(goodsType: String): String {
+        return when (goodsType) {
+            "photobook" ->
+                """
+                Create a realistic product mockup of a premium hardcover photobook lying on a clean surface.
+                The photobook should be slightly open, showing the provided photo on one of the visible pages.
+                The cover should be dark brown leather with embossed "PHOTOBOOK" text.
+                Use professional product photography lighting with soft shadows.
+                The background should be a neutral light surface.
+                Make it look like a high-quality commercial product photograph that you'd see in an online store.
+                The photo should be clearly visible and well-integrated into the page layout.
+                """.trimIndent()
+
+            "calendar" ->
+                """
+                Create a realistic product mockup of a modern desk calendar standing upright.
+                The calendar should show the provided photo in the upper half and a monthly calendar grid below.
+                The text "DECEMBER 2025" should be visible.
+                Use clean, minimalist design with white background for the calendar part.
+                Include professional product photography lighting and a neutral surface underneath.
+                Make it look like a premium product photograph for an e-commerce site.
+                The photo should be the focal point and clearly visible.
+                """.trimIndent()
+
+            "magnet" ->
+                """
+                Create a realistic product mockup of a premium photo magnet.
+                Show the provided photo mounted on a white-bordered square magnet.
+                The magnet should be shown on a metallic refrigerator surface with subtle reflections.
+                Use professional product photography lighting.
+                Include small text "PHOTO MAGNET" at the bottom of the white border.
+                Make it look like a high-quality e-commerce product photo.
+                """.trimIndent()
+
+            "frame" ->
+                """
+                Create a realistic product mockup of an elegant photo frame hanging on a light gray wall.
+                The frame should be dark wood with a classic design.
+                The provided photo should be clearly visible inside the frame with a white matting border.
+                Use natural lighting with subtle wall shadows.
+                Make it look like a premium home decor product photograph.
+                Professional interior photography style.
+                """.trimIndent()
+
+            "sticker" ->
+                """
+                Create a realistic product mockup of glossy photo stickers.
+                Show multiple copies of the provided photo as die-cut stickers with a white border.
+                Display them on a clean white surface with one slightly peeled up showing the backing.
+                Use bright, clean product photography lighting.
+                Make it look like a professional e-commerce product photo.
+                High-quality print finish with slight gloss reflection.
+                """.trimIndent()
+
+            "poster" ->
+                """
+                Create a realistic product mockup of an A3 poster.
+                Show the provided photo as a large print on premium matte paper.
+                The poster should be shown flat or slightly rolled at one edge.
+                Use clean product photography with neutral background.
+                Make it look like a high-quality art print product photo.
+                Professional commercial photography style.
+                """.trimIndent()
+
+            "postcard" ->
+                """
+                Create a realistic product mockup of a premium photo postcard.
+                Show the provided photo as the main image on a postcard with white borders.
+                Display it slightly tilted on a clean surface.
+                Use soft product photography lighting.
+                Make it look like a boutique stationery product photo.
+                High-quality print on thick cardstock.
+                """.trimIndent()
+
+            "wall-calendar" ->
+                """
+                Create a realistic product mockup of a wall calendar.
+                Show the provided photo in the upper portion with a monthly calendar grid below.
+                The calendar should appear to be hanging on a light wall.
+                Include binding holes at the top.
+                Use natural interior lighting.
+                Make it look like a premium home decor product photograph.
+                """.trimIndent()
+
+            else ->
+                """
+                Create a realistic product mockup showing the provided photo as a premium printed product.
+                Use professional product photography with clean background.
+                Make it look like a high-quality e-commerce product photo.
+                """.trimIndent()
+        }
+    }
+
+    private fun callGeminiImageGeneration(
+        prompt: String,
+        base64Image: String,
+    ): String {
+        val apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent"
+
+        val requestBody =
+            mapOf(
+                "contents" to
+                    listOf(
+                        mapOf(
+                            "role" to "user",
+                            "parts" to
+                                listOf(
+                                    mapOf(
+                                        "inlineData" to
+                                            mapOf(
+                                                "mimeType" to "image/png",
+                                                "data" to base64Image,
+                                            ),
+                                    ),
+                                    mapOf("text" to prompt),
+                                ),
+                        ),
+                    ),
+            )
+
+        val json = objectMapper.writeValueAsString(requestBody)
+        logger.info("Gemini Image Generation API 요청: $prompt")
+
+        val httpRequest =
+            Request
+                .Builder()
+                .url(apiUrl)
+                .post(json.toRequestBody("application/json".toMediaType()))
+                .addHeader("content-type", "application/json")
+                .addHeader("x-goog-api-key", geminiApiKey)
+                .build()
+
+        client.newCall(httpRequest).execute().use { response ->
+            if (!response.isSuccessful) {
+                val errorBody = response.body?.string() ?: "응답 본문 없음"
+                logger.error("Gemini Image API 오류: ${response.code} - $errorBody")
+                throw RuntimeException("Gemini Image API 오류: ${response.code}")
+            }
+
+            val responseBody =
+                response.body?.string() ?: throw RuntimeException("응답 본문이 비어있습니다")
+            logger.info("Gemini Image API 응답 수신")
+
+            val jsonNode = objectMapper.readTree(responseBody)
+            val candidates = jsonNode.get("candidates")
+            if (candidates != null && candidates.isArray && candidates.size() > 0) {
+                val content = candidates[0].get("content")
+                val parts = content?.get("parts")
+                if (parts != null && parts.isArray && parts.size() > 0) {
+                    val inlineData = parts[0].get("inlineData")
+                    val imageData = inlineData?.get("data")?.asText()
+                    if (imageData != null) {
+                        return imageData
+                    }
+                }
+            }
+            throw RuntimeException("생성된 이미지 데이터가 없습니다")
+        }
+    }
+
+    private fun encodeImageToBase64(image: BufferedImage): String {
+        val outputStream = java.io.ByteArrayOutputStream()
+        ImageIO.write(image, "PNG", outputStream)
+        return Base64.getEncoder().encodeToString(outputStream.toByteArray())
     }
 
     private fun loadImageFromUrl(imageUrl: String): BufferedImage {
