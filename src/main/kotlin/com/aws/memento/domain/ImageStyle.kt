@@ -25,6 +25,7 @@ enum class ImageStyle(
     SKIN_SMOOTHING("피부 보정", "Smooth skin texture while maintaining natural appearance and details", StyleCategory.PHOTO_ENHANCEMENT),
     FACE_ENHANCE("얼굴 보정", "Enhance facial features with natural beauty adjustments", StyleCategory.PHOTO_ENHANCEMENT),
     WHITENING("미백", "Brighten skin tone naturally while preserving realistic appearance", StyleCategory.PHOTO_ENHANCEMENT),
+    BACKGROUND_PEOPLE_REMOVAL("배경 인물 제거", "Remove people in the background while keeping main subjects intact", StyleCategory.PHOTO_ENHANCEMENT),
 }
 
 enum class StyleCategory {
