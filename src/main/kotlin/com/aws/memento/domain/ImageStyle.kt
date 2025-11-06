@@ -20,6 +20,11 @@ enum class ImageStyle(
     VIVID("선명하게", "Enhance color vibrancy and sharpness for more impactful photos", StyleCategory.PHOTO_ENHANCEMENT),
     CLARITY("또렷하게", "Improve sharpness and reduce blur for clearer details", StyleCategory.PHOTO_ENHANCEMENT),
     PROFESSIONAL("전문가 보정", "Comprehensive professional photo enhancement with optimal brightness, color, and clarity", StyleCategory.PHOTO_ENHANCEMENT),
+
+    BLEMISH_REMOVAL("잡티 제거", "Remove skin blemishes, spots, and imperfections for smoother complexion", StyleCategory.PHOTO_ENHANCEMENT),
+    SKIN_SMOOTHING("피부 보정", "Smooth skin texture while maintaining natural appearance and details", StyleCategory.PHOTO_ENHANCEMENT),
+    FACE_ENHANCE("얼굴 보정", "Enhance facial features with natural beauty adjustments", StyleCategory.PHOTO_ENHANCEMENT),
+    WHITENING("미백", "Brighten skin tone naturally while preserving realistic appearance", StyleCategory.PHOTO_ENHANCEMENT),
 }
 
 enum class StyleCategory {

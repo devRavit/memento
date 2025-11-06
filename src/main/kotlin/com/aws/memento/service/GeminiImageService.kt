@@ -185,6 +185,10 @@ class GeminiImageService(
                             com.aws.memento.domain.ImageStyle.VIVID -> "boost color saturation by 20-30% while maintaining natural skin tones"
                             com.aws.memento.domain.ImageStyle.CLARITY -> "apply unsharp mask to enhance edge definition without introducing artifacts"
                             com.aws.memento.domain.ImageStyle.PROFESSIONAL -> "apply professional-grade color grading, exposure optimization, and detail enhancement"
+                            com.aws.memento.domain.ImageStyle.BLEMISH_REMOVAL -> "remove skin blemishes, acne, spots, and minor imperfections using frequency separation technique while maintaining natural skin texture"
+                            com.aws.memento.domain.ImageStyle.SKIN_SMOOTHING -> "apply subtle skin smoothing with selective gaussian blur on low-frequency layer, preserving pores and natural texture details"
+                            com.aws.memento.domain.ImageStyle.FACE_ENHANCE -> "enhance facial features with natural beauty adjustments: subtle eye brightening, gentle contouring, and balanced facial proportions"
+                            com.aws.memento.domain.ImageStyle.WHITENING -> "brighten skin tone by 15-25% using curves adjustment, maintaining realistic undertones and avoiding oversaturation"
                             else -> "enhance photo quality"
                         }
                     }) to THIS EXACT PHOTOGRAPH without altering composition, subjects, or scene structure. The result must be indistinguishable from the original except for improved quality."
