@@ -4,6 +4,7 @@ import com.aws.memento.domain.CreateReviewRequest
 import com.aws.memento.domain.Review
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -17,6 +18,7 @@ class ReviewStorageService {
     private val objectMapper =
         ObjectMapper().apply {
             registerModule(JavaTimeModule())
+            registerModule(KotlinModule.Builder().build())
         }
 
     private val reviewsDirectory = File("reviews")
