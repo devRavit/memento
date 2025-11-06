@@ -62,7 +62,7 @@ class GeminiImageService(
     ): Flow<String> =
         flow {
             try {
-                emit("이미지 분석 시작...")
+                emit("PROGRESS:10:이미지를 불러오는 중...")
 
                 val imageParts =
                     imageFileNames.map { fileName ->
@@ -84,6 +84,8 @@ class GeminiImageService(
                         )
                     }
 
+                emit("PROGRESS:30:이미지 품질을 분석하는 중...")
+
                 val analysisPrompt = buildAnalysisPrompt(style, additionalPrompt)
                 val analysisRequest =
                     GeminiVisionRequest(
@@ -97,14 +99,12 @@ class GeminiImageService(
                             ),
                     )
 
-                emit("이미지 분석 중...")
                 val nanoBananaPrompt = callGeminiVision(analysisRequest)
-                emit("분석 완료! 프롬프트 생성됨")
-                emit("생성된 프롬프트: $nanoBananaPrompt")
+                emit("PROGRESS:60:AI가 최적의 보정 방법을 찾는 중...")
 
-                emit("이미지 생성 시작...")
+                emit("PROGRESS:70:보정된 이미지를 생성하는 중...")
                 val generatedImageData = generateImage(nanoBananaPrompt, imageParts)
-                emit("이미지 생성 완료!")
+                emit("PROGRESS:90:이미지를 저장하는 중...")
 
                 val savedFileName = saveGeneratedImage(generatedImageData)
                 emit("SUCCESS:$savedFileName")
