@@ -109,11 +109,12 @@ class GoodsPreviewService(
         g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC)
         g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY)
 
-        val photoArea = getPhotoAreaForGoodsType(goodsType, template.width, template.height)
+        val photoAreas = getPhotoAreasForGoodsType(goodsType, template.width, template.height)
 
-        val scaledImage = scaleImageToFit(userImage, photoArea.width, photoArea.height)
-
-        g.drawImage(scaledImage, photoArea.x, photoArea.y, photoArea.width, photoArea.height, null)
+        for (photoArea in photoAreas) {
+            val scaledImage = scaleImageToFit(userImage, photoArea.width, photoArea.height)
+            g.drawImage(scaledImage, photoArea.x, photoArea.y, photoArea.width, photoArea.height, null)
+        }
 
         g.drawImage(template, 0, 0, null)
         g.dispose()
@@ -123,65 +124,83 @@ class GoodsPreviewService(
 
     private data class Rectangle(val x: Int, val y: Int, val width: Int, val height: Int)
 
-    private fun getPhotoAreaForGoodsType(
+    private fun getPhotoAreasForGoodsType(
         goodsType: String,
         templateWidth: Int,
         templateHeight: Int,
-    ): Rectangle {
+    ): List<Rectangle> {
         return when (goodsType) {
-            "photobook" -> Rectangle(
-                x = (templateWidth * 0.15).toInt(),
-                y = (templateHeight * 0.2).toInt(),
-                width = (templateWidth * 0.4).toInt(),
-                height = (templateHeight * 0.5).toInt(),
+            "photobook" -> listOf(
+                Rectangle(
+                    x = (templateWidth * 0.15).toInt(),
+                    y = (templateHeight * 0.2).toInt(),
+                    width = (templateWidth * 0.4).toInt(),
+                    height = (templateHeight * 0.5).toInt(),
+                )
             )
-            "calendar" -> Rectangle(
-                x = (templateWidth * 0.1).toInt(),
-                y = (templateHeight * 0.15).toInt(),
-                width = (templateWidth * 0.8).toInt(),
-                height = (templateHeight * 0.45).toInt(),
+            "calendar" -> listOf(
+                Rectangle(
+                    x = (templateWidth * 0.1).toInt(),
+                    y = (templateHeight * 0.15).toInt(),
+                    width = (templateWidth * 0.8).toInt(),
+                    height = (templateHeight * 0.45).toInt(),
+                )
             )
-            "magnet" -> Rectangle(
-                x = (templateWidth * 0.3).toInt(),
-                y = (templateHeight * 0.3).toInt(),
-                width = (templateWidth * 0.4).toInt(),
-                height = (templateHeight * 0.4).toInt(),
+            "magnet" -> listOf(
+                Rectangle(x = 130, y = 80, width = 240, height = 240),
+                Rectangle(x = 510, y = 90, width = 220, height = 220),
+                Rectangle(x = 830, y = 80, width = 240, height = 240),
+                Rectangle(x = 130, y = 430, width = 240, height = 240),
+                Rectangle(x = 550, y = 480, width = 140, height = 140),
+                Rectangle(x = 860, y = 440, width = 220, height = 220),
             )
-            "frame" -> Rectangle(
-                x = (templateWidth * 0.2).toInt(),
-                y = (templateHeight * 0.2).toInt(),
-                width = (templateWidth * 0.6).toInt(),
-                height = (templateHeight * 0.6).toInt(),
+            "frame" -> listOf(
+                Rectangle(
+                    x = (templateWidth * 0.2).toInt(),
+                    y = (templateHeight * 0.2).toInt(),
+                    width = (templateWidth * 0.6).toInt(),
+                    height = (templateHeight * 0.6).toInt(),
+                )
             )
-            "sticker" -> Rectangle(
-                x = (templateWidth * 0.25).toInt(),
-                y = (templateHeight * 0.25).toInt(),
-                width = (templateWidth * 0.3).toInt(),
-                height = (templateHeight * 0.3).toInt(),
+            "sticker" -> listOf(
+                Rectangle(
+                    x = (templateWidth * 0.25).toInt(),
+                    y = (templateHeight * 0.25).toInt(),
+                    width = (templateWidth * 0.3).toInt(),
+                    height = (templateHeight * 0.3).toInt(),
+                )
             )
-            "poster" -> Rectangle(
-                x = (templateWidth * 0.15).toInt(),
-                y = (templateHeight * 0.15).toInt(),
-                width = (templateWidth * 0.7).toInt(),
-                height = (templateHeight * 0.7).toInt(),
+            "poster" -> listOf(
+                Rectangle(
+                    x = (templateWidth * 0.15).toInt(),
+                    y = (templateHeight * 0.15).toInt(),
+                    width = (templateWidth * 0.7).toInt(),
+                    height = (templateHeight * 0.7).toInt(),
+                )
             )
-            "postcard" -> Rectangle(
-                x = (templateWidth * 0.1).toInt(),
-                y = (templateHeight * 0.1).toInt(),
-                width = (templateWidth * 0.8).toInt(),
-                height = (templateHeight * 0.8).toInt(),
+            "postcard" -> listOf(
+                Rectangle(
+                    x = (templateWidth * 0.1).toInt(),
+                    y = (templateHeight * 0.1).toInt(),
+                    width = (templateWidth * 0.8).toInt(),
+                    height = (templateHeight * 0.8).toInt(),
+                )
             )
-            "wall-calendar" -> Rectangle(
-                x = (templateWidth * 0.1).toInt(),
-                y = (templateHeight * 0.1).toInt(),
-                width = (templateWidth * 0.8).toInt(),
-                height = (templateHeight * 0.4).toInt(),
+            "wall-calendar" -> listOf(
+                Rectangle(
+                    x = (templateWidth * 0.1).toInt(),
+                    y = (templateHeight * 0.1).toInt(),
+                    width = (templateWidth * 0.8).toInt(),
+                    height = (templateHeight * 0.4).toInt(),
+                )
             )
-            else -> Rectangle(
-                x = (templateWidth * 0.2).toInt(),
-                y = (templateHeight * 0.2).toInt(),
-                width = (templateWidth * 0.6).toInt(),
-                height = (templateHeight * 0.6).toInt(),
+            else -> listOf(
+                Rectangle(
+                    x = (templateWidth * 0.2).toInt(),
+                    y = (templateHeight * 0.2).toInt(),
+                    width = (templateWidth * 0.6).toInt(),
+                    height = (templateHeight * 0.6).toInt(),
+                )
             )
         }
     }
