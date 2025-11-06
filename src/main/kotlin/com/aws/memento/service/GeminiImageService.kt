@@ -119,27 +119,81 @@ class GeminiImageService(
         additionalPrompt: String?,
     ): String {
         val basePrompt =
-            """
-            Analyze these images and create an extremely detailed, high-quality prompt for professional image generation.
+            when (style.category) {
+                com.aws.memento.domain.StyleCategory.STYLE_TRANSFORM ->
+                    """
+                    You are creating a prompt for image-to-image style transfer. Analyze the input images and create a prompt that preserves the EXACT composition, layout, and subject matter while applying a new artistic style.
 
-            Target style: ${style.displayName} - ${style.description}
-            ${additionalPrompt?.let { "Additional requirements: $it" } ?: ""}
+                    Target style: ${style.displayName} - ${style.description}
+                    ${additionalPrompt?.let { "Additional requirements: $it" } ?: ""}
 
-            Create a HIGHLY DETAILED prompt with:
-            1. Scene Description: Full narrative of what's happening, not just keywords
-            2. Visual Details: Colors, textures, materials, patterns, specific objects
-            3. Lighting: Type of lighting (natural/artificial), direction, quality (soft/harsh), color temperature
-            4. Composition: Camera angle (eye-level/bird's-eye/low-angle), framing, depth of field
-            5. Atmosphere & Mood: Emotional tone, time of day, weather conditions
-            6. Technical Quality: "professional photography", "high resolution", "detailed", "sharp focus"
-            7. Style Application: Seamlessly integrate ${style.description} throughout
-            8. Character Details (if applicable): Facial expressions, clothing details, poses, interactions
+                    CRITICAL RULES:
+                    1. PRESERVE EXACT COMPOSITION: Keep the same camera angle, framing, and spatial layout as the original
+                    2. PRESERVE SUBJECTS: Keep all people, objects, and elements in the SAME positions and poses
+                    3. PRESERVE STRUCTURE: Maintain the same background, foreground, and overall scene structure
+                    4. ONLY CHANGE STYLE: Apply ${style.description} ONLY to the rendering style, colors, and artistic treatment
 
-            Use descriptive adjectives and specific nouns. Aim for 150-250 words of vivid description.
-            Write as a continuous narrative, not bullet points.
+                    Your prompt should describe:
+                    - The exact scene composition and layout from the original image
+                    - Positions and poses of all subjects (people, objects)
+                    - Spatial relationships between elements
+                    - Then specify: "rendered in ${style.description} style"
+                    - Include: "maintaining exact composition and layout from reference image"
 
-            Return ONLY the image generation prompt, nothing else.
-            """.trimIndent()
+                    Keep it concise (100-150 words) and focus on PRESERVING the original while ONLY changing the artistic style.
+                    Write as a single descriptive paragraph.
+
+                    Return ONLY the image generation prompt, nothing else.
+                    """.trimIndent()
+
+                com.aws.memento.domain.StyleCategory.PHOTO_ENHANCEMENT ->
+                    """
+                    CRITICAL INSTRUCTION: You are analyzing a photo for ENHANCEMENT ONLY, NOT REGENERATION.
+
+                    Your task: Create an EXTREMELY DETAILED description of the EXACT photo for faithful reproduction with quality improvements.
+
+                    Enhancement goal: ${style.displayName} - ${
+                        when (style) {
+                            com.aws.memento.domain.ImageStyle.BRIGHT -> "Increase brightness and exposure naturally while preserving all details"
+                            com.aws.memento.domain.ImageStyle.VIVID -> "Enhance color saturation and vibrancy naturally without oversaturation"
+                            com.aws.memento.domain.ImageStyle.CLARITY -> "Sharpen details and reduce blur while maintaining natural appearance"
+                            com.aws.memento.domain.ImageStyle.PROFESSIONAL -> "Comprehensive enhancement: optimize brightness, enhance colors, sharpen details, reduce noise"
+                            else -> style.description
+                        }
+                    }
+                    ${additionalPrompt?.let { "\nAdditional: $it" } ?: ""}
+
+                    MANDATORY RULES - VIOLATION WILL FAIL:
+                    1. DO NOT REGENERATE - ONLY ENHANCE THE EXACT PHOTO
+                    2. PRESERVE EVERY PIXEL'S POSITION - Camera angle, framing, crop, and composition MUST BE IDENTICAL
+                    3. PRESERVE ALL SUBJECTS - Every person, object, element MUST stay in EXACT same position, pose, size, and location
+                    4. PRESERVE BACKGROUND - Every background element, texture, and detail MUST remain unchanged
+                    5. NO CREATIVE CHANGES - Do NOT add, remove, or modify any elements
+                    6. MAINTAIN PHOTOGRAPHIC REALISM - Result MUST look like a real photograph, not edited or artificial
+
+                    Required output format:
+                    "This is an exact copy of the original photograph showing [EXTREMELY DETAILED PIXEL-LEVEL DESCRIPTION]:
+                    - Exact camera angle, distance, and perspective: [describe]
+                    - Every subject with precise position, pose, expression, clothing: [describe in detail]
+                    - Complete background description with all elements: [describe every detail]
+                    - Lighting direction and quality: [describe]
+                    - Color palette of the scene: [describe]
+
+                    ENHANCEMENT INSTRUCTION: Apply ${style.displayName} enhancement (${
+                        when (style) {
+                            com.aws.memento.domain.ImageStyle.BRIGHT -> "increase brightness by adjusting exposure curve while preserving highlight and shadow detail"
+                            com.aws.memento.domain.ImageStyle.VIVID -> "boost color saturation by 20-30% while maintaining natural skin tones"
+                            com.aws.memento.domain.ImageStyle.CLARITY -> "apply unsharp mask to enhance edge definition without introducing artifacts"
+                            com.aws.memento.domain.ImageStyle.PROFESSIONAL -> "apply professional-grade color grading, exposure optimization, and detail enhancement"
+                            else -> "enhance photo quality"
+                        }
+                    }) to THIS EXACT PHOTOGRAPH without altering composition, subjects, or scene structure. The result must be indistinguishable from the original except for improved quality."
+
+                    IMPORTANT: Describe in 150-200 words with extreme detail. Focus on EXACT replication with quality improvement ONLY.
+
+                    Return ONLY the prompt text.
+                    """.trimIndent()
+            }
 
         return basePrompt
     }
