@@ -98,3 +98,6 @@ $RECYCLE.BIN/
 ### Upload Files ###
 upload/
 upload/generated/
+
+### Review Files ###
+reviews/
