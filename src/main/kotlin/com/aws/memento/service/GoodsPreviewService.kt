@@ -100,13 +100,35 @@ class GoodsPreviewService(
         return when (goodsType) {
             "photobook" ->
                 """
-                Create a realistic product mockup of a premium hardcover photobook lying on a clean surface.
-                The photobook should be slightly open, showing the provided photo on one of the visible pages.
-                The cover should be dark brown leather with embossed "PHOTOBOOK" text.
-                Use professional product photography lighting with soft shadows.
-                The background should be a neutral light surface.
-                Make it look like a high-quality commercial product photograph that you'd see in an online store.
-                The photo should be clearly visible and well-integrated into the page layout.
+                Create an ultra-realistic, high-end product photograph of a luxury hardcover photobook.
+
+                PRODUCT DETAILS:
+                - Premium hardcover photobook with dark brown genuine leather texture
+                - Gold embossed "PHOTOBOOK" text on the cover
+                - The book should be elegantly positioned at a 45-degree angle, partially open
+                - Show 2-3 pages visible, with the provided photo prominently displayed on the right page
+                - Thick, high-quality matte paper pages with clean edges
+                - Professional bookbinding visible at the spine
+
+                PHOTO PRESENTATION:
+                - The provided photo should be printed in ULTRA HIGH QUALITY on the page
+                - Full-page or near-full-page layout with minimal white margins
+                - The photo should look vibrant, sharp, and professional
+                - Ensure the photo's colors and details are perfectly preserved
+
+                LIGHTING & QUALITY:
+                - Studio-quality photography with soft, diffused lighting from the top-left
+                - Subtle shadows underneath and to the right of the book
+                - Highlight the leather texture with gentle light reflections
+                - Professional depth of field with slight background blur
+
+                SETTING:
+                - Place on a pristine light oak wood surface or clean white marble
+                - Ultra-clean background with no distractions
+                - Premium e-commerce photography standard (Apple/luxury brand quality)
+                - The overall image should evoke luxury and premium quality
+
+                STYLE: Professional commercial product photography, luxury stationery aesthetic, museum-quality presentation
                 """.trimIndent()
 
             "calendar" ->
@@ -142,12 +164,34 @@ class GoodsPreviewService(
 
             "sticker" ->
                 """
-                Create a realistic product mockup of glossy photo stickers.
-                Show multiple copies of the provided photo as die-cut stickers with a white border.
-                Display them on a clean white surface with one slightly peeled up showing the backing.
-                Use bright, clean product photography lighting.
-                Make it look like a professional e-commerce product photo.
-                High-quality print finish with slight gloss reflection.
+                Create a hyper-realistic product photograph of premium photo stickers in a professional studio setting.
+
+                COMPOSITION:
+                - Show 3-4 identical stickers of the provided photo arranged artistically on a pristine white surface
+                - One sticker should be slightly lifted/peeled at the corner to show depth and the paper backing
+                - The stickers should have a clean white border (2-3mm) around the photo
+                - Arrange them in a casual yet organized layout with slight overlapping
+
+                QUALITY & DETAILS:
+                - Ultra-high resolution product photography quality (like you'd see on Apple or Amazon product pages)
+                - The photo on each sticker should be crystal clear and vibrant
+                - Show subtle glossy reflections on the sticker surface indicating premium vinyl material
+                - Capture the texture and thickness of high-quality sticker paper
+                - The white border should have clean, precise die-cut edges
+
+                LIGHTING & ATMOSPHERE:
+                - Professional studio lighting with soft shadows
+                - Bright, clean lighting that highlights the glossy finish
+                - Subtle highlights on the glossy surface showing premium quality
+                - Pure white background with no distractions
+
+                STYLE:
+                - Premium e-commerce product photography aesthetic
+                - Focus on making the product look desirable and high-quality
+                - Commercial photography standard similar to luxury stationery brands
+                - The photo quality should be so good that customers can clearly see every detail
+
+                IMPORTANT: The original photo should be PERFECTLY preserved and clearly visible on each sticker. This is a product photo to sell stickers, so the photo quality and clarity is paramount.
                 """.trimIndent()
 
             "poster" ->
