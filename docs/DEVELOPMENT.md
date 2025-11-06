@@ -184,9 +184,65 @@ curl http://localhost:9998/api/v1/souvenirs?userId=user123
    - 단위 테스트 작성 (시간 여유 있을 때)
    - API 수동 테스트 (curl 또는 Postman)
 
-5. **문서 업데이트**
+5. **문서 업데이트** (필수!)
    - API 변경사항 docs/specs/02-api.md 반영
    - 새로운 규칙은 docs/DEVELOPMENT.md 반영
+   - **개발 완료 후 반드시 변경 이력을 문서화**
+
+### 📝 개발 완료 후 문서화 규칙 (필수)
+
+**모든 개발 완료 후 다음을 기록합니다:**
+
+1. **변경 이력 기록**
+   - 파일: `docs/CHANGELOG.md`
+   - 형식:
+     ```markdown
+     ## [날짜] - 기능명
+
+     ### 변경 내용
+     - 추가된 기능/파일
+     - 수정된 로직
+     - 삭제된 코드
+
+     ### 영향 범위
+     - 변경된 레이어 (Controller/Service/Domain 등)
+     - 관련 API 엔드포인트
+
+     ### 테스트 방법
+     - 검증 명령어
+     - 테스트 시나리오
+     ```
+
+2. **README.md 업데이트**
+   - 새로운 API 엔드포인트 추가 시 업데이트
+   - 새로운 의존성 추가 시 설치 방법 업데이트
+   - 환경 변수 변경 시 Configuration 섹션 업데이트
+
+3. **API 명세 업데이트**
+   - `docs/specs/02-api.md`에 새 엔드포인트 추가
+   - Request/Response 예시 업데이트
+
+**예시:**
+```markdown
+## [2025-11-06] - 기념품 생성 API 구현
+
+### 변경 내용
+- SouvenirController 추가 (POST /api/v1/souvenirs)
+- SouvenirService 비즈니스 로직 구현
+- S3Service, GeminiService, NovaCanvasService 인터페이스 정의
+
+### 영향 범위
+- Controller Layer: SouvenirController
+- Service Layer: SouvenirService, S3Service, GeminiService, NovaCanvasService
+- Domain Layer: Souvenir, ImageAnalysis
+
+### 테스트 방법
+```bash
+./gradlew ktlintFormat && ./gradlew clean build
+./gradlew bootRun
+curl -X POST http://localhost:9998/api/v1/souvenirs ...
+```
+```
 
 ## Git 커밋 규칙
 
