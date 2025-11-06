@@ -64,6 +64,11 @@ class GoodsPreviewService(
         goodsType: String,
     ): String {
         try {
+            if (geminiApiKey.isNotEmpty()) {
+                logger.info("Gemini 기반 지능형 이미지 합성 사용")
+                return generateGeminiCompositePreview(imageUrl, goodsType)
+            }
+
             val userImage = loadImageFromUrl(imageUrl)
             val template = loadTemplate(goodsType)
 
@@ -78,12 +83,8 @@ class GoodsPreviewService(
 
             return resultUrl
         } catch (e: Exception) {
-            logger.error("템플릿 기반 미리보기 생성 실패, AI 방식으로 전환", e)
-            return if (geminiApiKey.isNotEmpty()) {
-                generateAiGoodsPreview(imageUrl, goodsType)
-            } else {
-                generateBasicGoodsPreview(imageUrl, goodsType)
-            }
+            logger.error("템플릿 기반 미리보기 생성 실패, 기본 방식으로 전환", e)
+            return generateBasicGoodsPreview(imageUrl, goodsType)
         }
     }
 
@@ -277,6 +278,283 @@ class GoodsPreviewService(
         logger.info("기본 굿즈 미리보기 생성 완료: $resultUrl")
 
         return resultUrl
+    }
+
+    private fun generateGeminiCompositePreview(
+        imageUrl: String,
+        goodsType: String,
+    ): String {
+        try {
+            val userImage = loadImageFromUrl(imageUrl)
+            val template = loadTemplate(goodsType)
+
+            val userImageBase64 = encodeImageToBase64(userImage)
+            val templateBase64 = encodeImageToBase64(template)
+
+            val prompt = buildGeminiCompositePrompt(goodsType)
+
+            val generatedImageData = callGeminiImageComposition(prompt, templateBase64, userImageBase64)
+
+            val fileName = "goods_preview_${System.currentTimeMillis()}.png"
+            val outputFile = File(generatedDirectory, fileName)
+            val imageBytes = Base64.getDecoder().decode(generatedImageData)
+            outputFile.writeBytes(imageBytes)
+
+            val resultUrl = "http://localhost:9998/api/v1/files/download/$fileName"
+            logger.info("Gemini 기반 굿즈 미리보기 생성 완료: $resultUrl")
+
+            return resultUrl
+        } catch (e: Exception) {
+            logger.error("Gemini 합성 미리보기 생성 실패", e)
+            throw e
+        }
+    }
+
+    private fun buildGeminiCompositePrompt(goodsType: String): String {
+        return when (goodsType) {
+            "photobook" ->
+                """
+                You are given two images:
+                1. A high-quality product template of a premium photobook (first image)
+                2. A user's photo that needs to be inserted into the photobook (second image)
+
+                TASK: Create a photorealistic composite image by intelligently placing the user's photo onto the photobook template.
+
+                INSTRUCTIONS:
+                - Analyze the photobook template to identify where photos should be placed (typically on the visible page)
+                - Place the user's photo into that area naturally, as if it was professionally printed
+                - Match the perspective, lighting, and shadows of the template
+                - Preserve the photobook's physical appearance (leather texture, binding, shadows)
+                - Ensure the user's photo looks like it's part of the printed page, not overlaid
+                - Maintain the template's realistic product photography quality
+
+                OUTPUT: A single composite image showing the photobook with the user's photo naturally integrated.
+                """.trimIndent()
+
+            "calendar" ->
+                """
+                You are given two images:
+                1. A realistic calendar template (first image)
+                2. A user's photo (second image)
+
+                TASK: Intelligently composite these images to show the user's photo naturally integrated into the calendar's photo area.
+
+                INSTRUCTIONS:
+                - Identify the photo display area in the calendar template (usually upper portion)
+                - Insert the user's photo into that area with proper scaling and positioning
+                - Match the perspective and lighting
+                - Preserve the calendar grid and all text elements
+                - Make it look like a professionally printed calendar product
+
+                OUTPUT: A composite image of the calendar with the user's photo integrated.
+                """.trimIndent()
+
+            "wall-calendar" ->
+                """
+                You are given two images:
+                1. A wall calendar template (first image)
+                2. A user's photo (second image)
+
+                TASK: Create a photorealistic composite showing the user's photo naturally placed in the calendar's photo section.
+
+                INSTRUCTIONS:
+                - Locate the photo area in the wall calendar template
+                - Integrate the user's photo maintaining the calendar's hanging appearance
+                - Preserve binding holes, shadows, and wall mounting perspective
+                - Keep the monthly calendar grid intact
+                - Match lighting and ensure realistic integration
+
+                OUTPUT: A composite wall calendar with the user's photo seamlessly integrated.
+                """.trimIndent()
+
+            "magnet" ->
+                """
+                You are given two images:
+                1. A photo magnet product template showing multiple magnets (first image)
+                2. A user's photo (second image)
+
+                TASK: Create a composite showing the user's photo on the magnet surfaces.
+
+                INSTRUCTIONS:
+                - Identify all magnet surfaces in the template
+                - Place the user's photo on each magnet with proper scaling
+                - Maintain the metallic surface reflections and shadows
+                - Preserve the refrigerator or magnetic surface appearance
+                - Make it look like professionally printed photo magnets
+
+                OUTPUT: A composite image with photo magnets displaying the user's photo.
+                """.trimIndent()
+
+            "frame" ->
+                """
+                You are given two images:
+                1. A picture frame template (first image)
+                2. A user's photo (second image)
+
+                TASK: Create a photorealistic composite showing the user's photo framed and displayed.
+
+                INSTRUCTIONS:
+                - Identify the photo area within the frame
+                - Insert the user's photo with proper perspective and matting
+                - Preserve the frame's wood texture, shadows, and wall mounting appearance
+                - Match lighting and ensure the photo looks professionally framed
+                - Maintain realistic depth and glass reflection if present
+
+                OUTPUT: A composite image of the framed user photo.
+                """.trimIndent()
+
+            "sticker" ->
+                """
+                You are given two images:
+                1. A sticker product template (first image)
+                2. A user's photo (second image)
+
+                TASK: Create a realistic composite showing photo stickers with the user's image.
+
+                INSTRUCTIONS:
+                - Identify sticker shapes and positions in the template
+                - Place the user's photo on each sticker surface
+                - Maintain glossy finish, white borders, and peeling effects
+                - Preserve shadows and surface textures
+                - Make it look like professional photo stickers
+
+                OUTPUT: A composite image showing photo stickers with the user's image.
+                """.trimIndent()
+
+            "poster" ->
+                """
+                You are given two images:
+                1. A poster template (first image)
+                2. A user's photo (second image)
+
+                TASK: Create a photorealistic composite showing the user's photo as a poster print.
+
+                INSTRUCTIONS:
+                - Identify the printable area of the poster template
+                - Insert the user's photo maintaining poster dimensions
+                - Preserve paper texture, edges, and any rolled effects
+                - Match lighting and ensure it looks like a professional print
+                - Maintain the poster's presentation style
+
+                OUTPUT: A composite poster image with the user's photo.
+                """.trimIndent()
+
+            "postcard" ->
+                """
+                You are given two images:
+                1. A postcard template (first image)
+                2. A user's photo (second image)
+
+                TASK: Create a realistic composite showing the user's photo on a postcard.
+
+                INSTRUCTIONS:
+                - Identify the photo area of the postcard (front side)
+                - Insert the user's photo with white borders
+                - Preserve cardstock texture and postcard edges
+                - Maintain any tilted or flat presentation angle
+                - Make it look like a professionally printed postcard
+
+                OUTPUT: A composite postcard with the user's photo integrated.
+                """.trimIndent()
+
+            else ->
+                """
+                You are given two images:
+                1. A product template (first image)
+                2. A user's photo (second image)
+
+                TASK: Intelligently composite these to show the user's photo integrated into the product.
+
+                INSTRUCTIONS:
+                - Analyze the template to identify photo placement areas
+                - Insert the user's photo naturally into those areas
+                - Match perspective, lighting, and material properties
+                - Preserve the product's physical characteristics
+                - Create a photorealistic result
+
+                OUTPUT: A composite product image with the user's photo integrated.
+                """.trimIndent()
+        }
+    }
+
+    private fun callGeminiImageComposition(
+        prompt: String,
+        templateBase64: String,
+        userImageBase64: String,
+    ): String {
+        val apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent"
+
+        val requestBody =
+            mapOf(
+                "contents" to
+                    listOf(
+                        mapOf(
+                            "role" to "user",
+                            "parts" to
+                                listOf(
+                                    mapOf(
+                                        "inlineData" to
+                                            mapOf(
+                                                "mimeType" to "image/png",
+                                                "data" to templateBase64,
+                                            ),
+                                    ),
+                                    mapOf(
+                                        "inlineData" to
+                                            mapOf(
+                                                "mimeType" to "image/png",
+                                                "data" to userImageBase64,
+                                            ),
+                                    ),
+                                    mapOf("text" to prompt),
+                                ),
+                        ),
+                    ),
+            )
+
+        val json = objectMapper.writeValueAsString(requestBody)
+        logger.info("Gemini 이미지 합성 API 요청")
+
+        val httpRequest =
+            Request
+                .Builder()
+                .url(apiUrl)
+                .post(json.toRequestBody("application/json".toMediaType()))
+                .addHeader("content-type", "application/json")
+                .addHeader("x-goog-api-key", geminiApiKey)
+                .build()
+
+        client.newCall(httpRequest).execute().use { response ->
+            if (!response.isSuccessful) {
+                val errorBody = response.body?.string() ?: "응답 본문 없음"
+                logger.error("Gemini 합성 API 오류: ${response.code} - $errorBody")
+                throw RuntimeException("Gemini 합성 API 오류: ${response.code}")
+            }
+
+            val responseBody =
+                response.body?.string() ?: throw RuntimeException("응답 본문이 비어있습니다")
+            logger.info("Gemini 합성 API 응답 수신")
+
+            val jsonNode = objectMapper.readTree(responseBody)
+            val candidates = jsonNode.get("candidates")
+            if (candidates != null && candidates.isArray && candidates.size() > 0) {
+                val content = candidates[0].get("content")
+                val parts = content?.get("parts")
+                if (parts != null && parts.isArray) {
+                    for (i in 0 until parts.size()) {
+                        val part = parts[i]
+                        val inlineData = part.get("inlineData")
+                        if (inlineData != null) {
+                            val imageData = inlineData.get("data")?.asText()
+                            if (imageData != null) {
+                                return imageData
+                            }
+                        }
+                    }
+                }
+            }
+            throw RuntimeException("합성된 이미지 데이터가 없습니다")
+        }
     }
 
     private fun buildGoodsPreviewPrompt(goodsType: String): String {
