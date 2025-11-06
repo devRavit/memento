@@ -82,8 +82,19 @@ def create_wall_calendar_template():
     return img
 
 def create_magnet_template():
-    img = Image.new('RGBA', (1400, 1000), (240, 240, 240, 255))
+    img = Image.new('RGBA', (1400, 1000), (255, 255, 255, 255))
     draw = ImageDraw.Draw(img)
+
+    for y in range(img.height):
+        for x in range(img.width):
+            base_r = 220 + int(20 * (y / img.height))
+            base_g = 225 + int(20 * (y / img.height))
+            base_b = 230 + int(20 * (y / img.height))
+            noise = hash((x * 7 + y * 13) % 997) % 15 - 7
+            r = max(0, min(255, base_r + noise))
+            g = max(0, min(255, base_g + noise))
+            b = max(0, min(255, base_b + noise))
+            img.putpixel((x, y), (r, g, b, 255))
 
     magnets = [
         {'type': 'circle', 'center': (250, 200), 'radius': 120},
@@ -94,11 +105,61 @@ def create_magnet_template():
         {'type': 'square', 'box': [850, 430, 1090, 670]},
     ]
 
+    def draw_shadow(cx, cy, r, shape_type='circle', box=None):
+        shadow_offset_x, shadow_offset_y = 8, 8
+        shadow_blur = 12
+
+        if shape_type == 'circle':
+            for dy in range(-r - shadow_blur, r + shadow_blur):
+                for dx in range(-r - shadow_blur, r + shadow_blur):
+                    px, py = cx + dx + shadow_offset_x, cy + dy + shadow_offset_y
+                    if 0 <= px < img.width and 0 <= py < img.height:
+                        dist = (dx**2 + dy**2) ** 0.5
+                        if dist < r + shadow_blur:
+                            alpha = max(0, min(50, int(50 * (1 - (dist - r) / shadow_blur))))
+                            if alpha > 0:
+                                current = img.getpixel((px, py))
+                                new_r = max(0, current[0] - alpha)
+                                new_g = max(0, current[1] - alpha)
+                                new_b = max(0, current[2] - alpha)
+                                img.putpixel((px, py), (new_r, new_g, new_b, 255))
+
+        elif shape_type == 'square' and box:
+            x1, y1, x2, y2 = box
+            for dy in range(-shadow_blur, y2 - y1 + shadow_blur):
+                for dx in range(-shadow_blur, x2 - x1 + shadow_blur):
+                    px, py = x1 + dx + shadow_offset_x, y1 + dy + shadow_offset_y
+                    if 0 <= px < img.width and 0 <= py < img.height:
+                        dist_x = max(0, max(x1 - px, px - x2))
+                        dist_y = max(0, max(y1 - py, py - y2))
+                        dist = (dist_x**2 + dist_y**2) ** 0.5
+                        alpha = max(0, min(50, int(50 * (1 - dist / shadow_blur))))
+                        if alpha > 0:
+                            current = img.getpixel((px, py))
+                            new_r = max(0, current[0] - alpha)
+                            new_g = max(0, current[1] - alpha)
+                            new_b = max(0, current[2] - alpha)
+                            img.putpixel((px, py), (new_r, new_g, new_b, 255))
+
     for magnet in magnets:
         if magnet['type'] == 'circle':
             cx, cy = magnet['center']
             r = magnet['radius']
-            draw.ellipse([cx-r, cy-r, cx+r, cy+r], fill=(255, 255, 255, 255), outline=(180, 180, 180, 255), width=3)
+
+            draw_shadow(cx, cy, r, 'circle')
+
+            draw.ellipse([cx-r-3, cy-r-3, cx+r+3, cy+r+3], fill=(200, 200, 200, 255))
+            draw.ellipse([cx-r, cy-r, cx+r, cy+r], fill=(250, 250, 250, 255))
+
+            for angle_deg in range(0, 360, 10):
+                angle = angle_deg * 3.14159 / 180
+                px = int(cx + (r - 5) * (1 + 0.02 * ((cx + cy + angle_deg) % 7)) * (0.5 if angle_deg % 20 == 0 else 1) * (0 if angle_deg % 40 == 0 else 1) + r * (1 - abs((angle_deg % 180) - 90) / 90) * 0.02)
+                py = int(cy + (r - 5) * (1 + 0.02 * ((cx + cy + angle_deg) % 7)) * (0.5 if angle_deg % 20 == 0 else 1) * (0 if angle_deg % 40 == 0 else 1) + r * (1 - abs((angle_deg % 180) - 90) / 90) * 0.02)
+
+            border_width = 8
+            for bw in range(border_width):
+                alpha = int(255 * (1 - bw / border_width))
+                draw.ellipse([cx-r+bw, cy-r+bw, cx+r-bw, cy+r-bw], outline=(240, 240, 240, alpha), width=1)
 
             mask = Image.new('L', (r*2, r*2), 0)
             mask_draw = ImageDraw.Draw(mask)
@@ -109,24 +170,26 @@ def create_magnet_template():
                     if mask.getpixel((x, y)) > 128:
                         px, py = cx - r + x, cy - r + y
                         if 0 <= px < img.width and 0 <= py < img.height:
-                            img.putpixel((px, py), (0, 0, 0, 0))
+                            dist_from_center = ((x - r)**2 + (y - r)**2) ** 0.5
+                            if dist_from_center < r - border_width:
+                                img.putpixel((px, py), (0, 0, 0, 0))
 
         elif magnet['type'] == 'square':
             x1, y1, x2, y2 = magnet['box']
-            draw.rectangle([x1, y1, x2, y2], fill=(255, 255, 255, 255), outline=(180, 180, 180, 255), width=3)
-            for i in range(x1+10, x2-10):
-                for j in range(y1+10, y2-10):
+
+            draw_shadow((x1+x2)//2, (y1+y2)//2, 0, 'square', (x1, y1, x2, y2))
+
+            draw.rectangle([x1-3, y1-3, x2+3, y2+3], fill=(200, 200, 200, 255))
+            draw.rectangle([x1, y1, x2, y2], fill=(250, 250, 250, 255))
+
+            border_width = 8
+            for i in range(x1 + border_width, x2 - border_width):
+                for j in range(y1 + border_width, y2 - border_width):
                     img.putpixel((i, j), (0, 0, 0, 0))
 
         elif magnet['type'] == 'hexagon':
             cx, cy = magnet['center']
             r = magnet['radius']
-            points = []
-            for i in range(6):
-                angle = 3.14159 / 3 * i
-                x = cx + r * (0.866 if i % 2 == 0 else 0.5) * (1 if i < 3 else -1)
-                y = cy + r * (0.5 if i % 2 == 0 else 0.866) * (1 if 1 <= i <= 4 else -1)
-                points.append((x, y))
 
             points = [
                 (cx, cy - r),
@@ -137,19 +200,30 @@ def create_magnet_template():
                 (cx - r * 0.866, cy - r * 0.5),
             ]
 
-            draw.polygon(points, fill=(255, 255, 255, 255), outline=(180, 180, 180, 255), width=3)
+            draw_shadow(cx, cy, r, 'circle')
+
+            shadow_points = [(x + 3, y + 3) for x, y in points]
+            draw.polygon(shadow_points, fill=(200, 200, 200, 255))
+            draw.polygon(points, fill=(250, 250, 250, 255))
 
             mask = Image.new('L', (int(r*2.2), int(r*2.2)), 0)
             mask_draw = ImageDraw.Draw(mask)
             offset_points = [(x - cx + r*1.1, y - cy + r*1.1) for x, y in points]
             mask_draw.polygon(offset_points, fill=255)
 
+            border_width = 8
             for x in range(int(r*2.2)):
                 for y in range(int(r*2.2)):
                     if mask.getpixel((x, y)) > 128:
                         px, py = int(cx - r*1.1 + x), int(cy - r*1.1 + y)
                         if 0 <= px < img.width and 0 <= py < img.height:
-                            img.putpixel((px, py), (0, 0, 0, 0))
+                            dist_from_edge = min([
+                                abs((py - cy) - (px - cx) * (points[i+1][1] - points[i][1]) / (points[i+1][0] - points[i][0] + 0.001))
+                                for i in range(len(points) - 1)
+                            ] + [abs((py - cy) - (px - cx) * (points[0][1] - points[-1][1]) / (points[0][0] - points[-1][0] + 0.001))])
+
+                            if dist_from_edge > border_width:
+                                img.putpixel((px, py), (0, 0, 0, 0))
 
         elif magnet['type'] == 'heart':
             cx, cy = magnet['center']
@@ -173,15 +247,19 @@ def create_magnet_template():
                     if heart_mask.getpixel((x, y)) > 128:
                         px, py = cx - s//2 + x, cy - s//2 + y
                         if 0 <= px < img.width and 0 <= py < img.height:
-                            current = img.getpixel((px, py))
-                            if current[3] > 0:
-                                img.putpixel((px, py), (255, 255, 255, 255))
+                            shadow_px, shadow_py = px + 5, py + 5
+                            if 0 <= shadow_px < img.width and 0 <= shadow_py < img.height:
+                                current = img.getpixel((shadow_px, shadow_py))
+                                img.putpixel((shadow_px, shadow_py), (max(0, current[0] - 30), max(0, current[1] - 30), max(0, current[2] - 30), 255))
 
+                            img.putpixel((px, py), (250, 250, 250, 255))
+
+            border_width = 8
             for x in range(s):
                 for y in range(s):
                     if heart_mask.getpixel((x, y)) > 128:
                         px, py = cx - s//2 + x, cy - s//2 + y
-                        if 10 < x < s-10 and 10 < y < s-10:
+                        if border_width < x < s - border_width and border_width < y < s - border_width:
                             if 0 <= px < img.width and 0 <= py < img.height:
                                 img.putpixel((px, py), (0, 0, 0, 0))
 
