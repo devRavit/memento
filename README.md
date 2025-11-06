@@ -316,13 +316,13 @@ GET /souvenirs?userId={userId}
 ### Git 커밋 규칙
 
 ```
-[타입] 간결한 한 줄 설명
+타입: 간결한 한 줄 설명
 
 예시:
-[feat] 기념품 생성 API 구현
-[fix] S3 업로드 오류 수정
-[refactor] Service 레이어 리팩토링
-[docs] API 명세 업데이트
+feat: 기념품 생성 API 구현
+fix: S3 업로드 오류 수정
+refactor: Service 레이어 리팩토링
+docs: API 명세 업데이트
 ```
 
 **타입:**

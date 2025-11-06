@@ -248,13 +248,13 @@ curl -X POST http://localhost:9998/api/v1/souvenirs ...
 
 ### 커밋 메시지 포맷
 ```
-[타입] 간결한 한 줄 설명
+타입: 간결한 한 줄 설명
 
 예시:
-[feat] 기념품 생성 API 구현
-[fix] S3 업로드 오류 수정
-[refactor] Service 레이어 리팩토링
-[docs] API 명세 업데이트
+feat: 기념품 생성 API 구현
+fix: S3 업로드 오류 수정
+refactor: Service 레이어 리팩토링
+docs: API 명세 업데이트
 ```
 
 ### 타입
