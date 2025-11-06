@@ -1,5 +1,47 @@
 # 변경 이력
 
+## [2025-11-06] - Health API 및 CORS 설정 추가
+
+### 변경 내용
+
+#### Health Check API
+- `HealthController`: Health check 엔드포인트 추가
+  - GET `/api/v1/health`: 서버 상태 확인 (status, timestamp)
+  - GET `/api/v1`: 서비스 정보 (service, version, status)
+- `HealthResponse`: Health check 응답 DTO
+
+#### CORS 설정
+- `WebConfig`: CORS 설정 추가
+  - Frontend (localhost:9999) 허용
+  - GET, POST, PUT, DELETE, OPTIONS 메서드 허용
+  - Credentials 지원
+
+### 영향 범위
+- **Frontend 연동 기반 구축**
+- Controller Layer: HealthController
+- Config Layer: WebConfig
+
+### 테스트 방법
+```bash
+# ktlint 및 빌드 검증
+./gradlew ktlintCheck && ./gradlew build -x test
+
+# 애플리케이션 실행
+./gradlew bootRun
+
+# Health 엔드포인트 테스트
+curl http://localhost:9998/api/v1/health
+curl http://localhost:9998/api/v1
+```
+
+### 다음 단계
+- [ ] Frontend와 실제 연동 테스트
+- [ ] AWS S3 실제 연동 구현
+- [ ] Gemini AI API 연동 구현
+- [ ] Nova Canvas (AWS Bedrock) 연동 구현
+
+---
+
 ## [2025-11-06] - 프로젝트 초기 설정 및 API 스켈레톤 구현
 
 ### 변경 내용
