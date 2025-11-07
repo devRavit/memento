@@ -104,3 +104,7 @@ reviews/
 
 ### Order Files ###
 orders/
+
+### Local Configuration ###
+**/application-local.yml
+**/application-local.yaml
