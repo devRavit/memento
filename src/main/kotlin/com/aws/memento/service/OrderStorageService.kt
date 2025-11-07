@@ -31,7 +31,13 @@ class OrderStorageService {
     }
 
     fun createOrder(request: CreateOrderRequest): Order {
-        val orderId = "ORDER_${UUID.randomUUID()}"
+        val now = LocalDateTime.now()
+        val orderId = "ORD${now.toEpochSecond(java.time.ZoneOffset.UTC).toString().takeLast(8)}"
+
+        val trackingNumber = generateTrackingNumber()
+        val courierCompany = "CJ대한통운"
+        val estimatedDeliveryDate = now.plusDays((2..3).random().toLong())
+
         val order =
             Order(
                 id = orderId,
@@ -43,15 +49,23 @@ class OrderStorageService {
                 customerName = request.customerName,
                 customerPhone = request.customerPhone,
                 shippingAddress = request.shippingAddress,
-                orderStatus = request.orderStatus,
-                createdAt = LocalDateTime.now(),
+                orderStatus = "배송중",
+                trackingNumber = trackingNumber,
+                courierCompany = courierCompany,
+                estimatedDeliveryDate = estimatedDeliveryDate,
+                createdAt = now,
             )
 
         val orderFile = File(ordersDirectory, "$orderId.json")
         objectMapper.writerWithDefaultPrettyPrinter().writeValue(orderFile, order)
 
-        logger.info("주문 저장 완료: $orderId (굿즈: ${request.goodsName})")
+        logger.info("주문 저장 완료: $orderId (굿즈: ${request.goodsName}, 송장번호: $trackingNumber)")
         return order
+    }
+
+    private fun generateTrackingNumber(): String {
+        val randomDigits = (1..12).map { (0..9).random() }.joinToString("")
+        return randomDigits
     }
 
     fun getOrderById(orderId: String): Order? {

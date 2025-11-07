@@ -50,6 +50,12 @@ class ReviewStorageService(
             )
 
         val productFile = File(reviewsDirectory, "${request.productId}.json")
+
+        if (!reviewsDirectory.exists()) {
+            reviewsDirectory.mkdirs()
+            logger.info("리뷰 저장 디렉토리 생성 (재시도): ${reviewsDirectory.absolutePath}")
+        }
+
         val reviews = if (productFile.exists()) {
             objectMapper.readValue<MutableList<Review>>(productFile)
         } else {

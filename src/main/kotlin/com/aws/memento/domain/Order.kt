@@ -13,6 +13,9 @@ data class Order(
     val customerPhone: String,
     val shippingAddress: ShippingAddress,
     val orderStatus: String,
+    val trackingNumber: String? = null,
+    val courierCompany: String? = null,
+    val estimatedDeliveryDate: LocalDateTime? = null,
     val createdAt: LocalDateTime,
 )
 

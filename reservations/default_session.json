@@ -17,7 +17,7 @@
   "airline" : "진에어 LJ201",
   "canReview" : false,
   "reviewDaysLeft" : 0,
-  "createdAt" : [ 2025, 11, 7, 9, 14, 37, 229599000 ]
+  "createdAt" : [ 2025, 11, 7, 10, 16, 25, 230177000 ]
 }, {
   "id" : "RES_002",
   "sessionId" : "default_session",
@@ -37,7 +37,7 @@
   "airline" : "현지 투어 (한국어 가이드)",
   "canReview" : true,
   "reviewDaysLeft" : 24,
-  "createdAt" : [ 2025, 11, 7, 9, 14, 37, 229631000 ]
+  "createdAt" : [ 2025, 11, 7, 10, 16, 25, 230229000 ]
 }, {
   "id" : "RES_003",
   "sessionId" : "default_session",
@@ -57,7 +57,7 @@
   "airline" : "김포-제주 항공편",
   "canReview" : true,
   "reviewDaysLeft" : 15,
-  "createdAt" : [ 2025, 11, 7, 9, 14, 37, 229638000 ]
+  "createdAt" : [ 2025, 11, 7, 10, 16, 25, 230246000 ]
 }, {
   "id" : "RES_004",
   "sessionId" : "default_session",
@@ -77,5 +77,5 @@
   "airline" : "KTX + 현지 교통",
   "canReview" : false,
   "reviewDaysLeft" : 0,
-  "createdAt" : [ 2025, 11, 7, 9, 14, 37, 229645000 ]
+  "createdAt" : [ 2025, 11, 7, 10, 16, 25, 230262000 ]
 } ]
