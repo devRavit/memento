@@ -13,7 +13,9 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 @Service
-class ReviewStorageService {
+class ReviewStorageService(
+    private val reservationStorageService: ReservationStorageService
+) {
     private val logger = LoggerFactory.getLogger(javaClass)
     private val objectMapper =
         ObjectMapper().apply {
@@ -56,6 +58,13 @@ class ReviewStorageService {
 
         reviews.add(review)
         objectMapper.writerWithDefaultPrettyPrinter().writeValue(productFile, reviews)
+
+        // 예약 상태 업데이트: 리뷰 작성 완료 시 canReview를 false로 변경
+        reservationStorageService.updateReservationReviewStatus(
+            sessionId = request.sessionId,
+            productId = request.productId,
+            canReview = false
+        )
 
         logger.info("리뷰 저장 완료: $reviewId (상품: ${request.productName})")
         return review
